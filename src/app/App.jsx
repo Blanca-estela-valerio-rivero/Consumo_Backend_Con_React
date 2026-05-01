@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import MenuOpciones from './components/MenuOpciones.jsx'
+import MenuOpciones from '../pages/MenuOpciones.jsx'
 
 function App() {
-  const [activeItem, setActiveItem] = useState('semestres')
+  const [activeItem, setActiveItem] = useState('dashboard')
 
   return (
     <MenuOpciones

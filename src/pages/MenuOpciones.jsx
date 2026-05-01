@@ -1,7 +1,10 @@
-import { useState } from 'react'
-import { semestresData, alumnosData, materiasData, currentUser } from '../shared/constants/data'
-import Sidebar from './Sidebar'
-import SemestreCard from './SemestreCard'
+import { useState, useEffect } from 'react'
+import { semestresData, materiasData, currentUser } from '../shared/constants/data'
+import { obtenerAlumnos, crearAlumno, actualizarAlumno, eliminarAlumno } from '../features/alumnos/services/alumnoService'
+import { obtenerMaterias, crearMateria, actualizarMateria, eliminarMateria } from '../features/materias/services/materiaService'
+import { obtenerSemestres, crearSemestre, actualizarSemestre, eliminarSemestre } from '../features/semestres/services/semestreService'
+import Sidebar from '../layouts/Sidebar.jsx'
+import SemestreCard from '../features/semestres/components/SemestreCard.jsx'
 
 const navigationItems = {
   principal: [
@@ -21,6 +24,7 @@ const getAvatarColor = (index) => {
 }
 
 const getInitials = (nombre) => {
+  if (!nombre) return 'NA'
   return nombre
     .split(' ')
     .map(n => n.charAt(0).toUpperCase())
@@ -33,25 +37,31 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [selectedCarrera, setSelectedCarrera] = useState('')
+  const [alumnos, setAlumnos] = useState([])
+  const [alumnoEditando, setAlumnoEditando] = useState(null)
   const [formData, setFormData] = useState({
-    numeroControl: '',
     nombre: '',
-    apellido: '',
-    telefono: '',
-    email: '',
+    apellido_paterno: '',
+    apellido_materno: '',
+    matricula: '',
     carrera: '',
-    imagenURL: ''
+    semestre: '',
+    correo: ''
   })
+  const [formErrors, setFormErrors] = useState({})
+  const [materias, setMaterias] = useState([])
+  const [materiaEditando, setMateriaEditando] = useState(null)
   const [formDataMateria, setFormDataMateria] = useState({
     nombre: '',
     creditos: '',
     semestre: ''
   })
   const [showModalSemestre, setShowModalSemestre] = useState(false)
+  const [semestres, setSemestres] = useState([])
+  const [semestreEditando, setSemestreEditando] = useState(null)
   const [formDataSemestre, setFormDataSemestre] = useState({
     nombre: '',
-    fechaInicio: '',
-    fechaFin: ''
+    estado: 'Activo'
   })
 
   const handleNavigate = (itemId) => {
@@ -59,6 +69,39 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
       onNavigate(itemId)
     }
   }
+
+  const fetchAlumnos = async () => {
+    try {
+      const data = await obtenerAlumnos();
+      setAlumnos(data);
+    } catch (error) {
+      console.error("Error al obtener alumnos", error);
+    }
+  }
+
+  const fetchMaterias = async () => {
+    try {
+      const data = await obtenerMaterias();
+      setMaterias(data);
+    } catch (error) {
+      console.error("Error al obtener materias", error);
+    }
+  }
+
+  const fetchSemestres = async () => {
+    try {
+      const data = await obtenerSemestres();
+      setSemestres(data);
+    } catch (error) {
+      console.error("Error al obtener semestres", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchAlumnos();
+    fetchMaterias();
+    fetchSemestres();
+  }, []);
 
   const getPageTitle = () => {
     if (activeItem === 'semestres') return 'Períodos Académicos'
@@ -68,16 +111,21 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
     return 'Sistema Académico'
   }
 
-  const getPageSubtitle = () => {
-    if (activeItem === 'semestres') return 'Gestión de ciclos y semestres registrados'
-    if (activeItem === 'alumnos') return 'Administra estudiantes y su información'
-    if (activeItem === 'materias') return 'Administra materias y contenido curricular'
-    if (activeItem === 'dashboard') return 'Bienvenido al sistema de gestión académica'
-    return ''
-  }
 
   const renderSectionContent = () => {
     if (activeItem === 'dashboard') {
+      const carreras = [
+        'Sistemas',
+        'Arquitectura',
+        'Civil',
+        'Mecatrónica',
+        'Administración',
+        'Gestión'
+      ];
+      
+      const distributionCounts = carreras.map(c => alumnos.filter(a => a.carrera === c).length);
+      const maxAlumnos = Math.max(...distributionCounts, 1); // Avoid division by zero
+
       return (
         <div className="px-5 pb-5 pt-4 flex-grow-1">
           <div className="d-flex align-items-start justify-content-between mb-5">
@@ -91,40 +139,52 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
           <div className="row g-4 mb-5">
             {/* Alumnos */}
             <div className="col-md-4">
-              <div className="stat-card">
+              <div 
+                className="stat-card" 
+                style={{ cursor: 'pointer' }}
+                onClick={() => onNavigate('alumnos')}
+              >
                 <div className="d-flex align-items-start justify-content-between mb-3">
                   <div className="stat-icon">
                     <i className="bi bi-people"></i>
                   </div>
                 </div>
                 <div className="stat-label">Alumnos</div>
-                <div className="stat-number">0</div>
+                <div className="stat-number">{alumnos.length}</div>
               </div>
             </div>
 
             {/* Materias */}
             <div className="col-md-4">
-              <div className="stat-card">
+              <div 
+                className="stat-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onNavigate('materias')}
+              >
                 <div className="d-flex align-items-start justify-content-between mb-3">
                   <div className="stat-icon">
                     <i className="bi bi-book"></i>
                   </div>
                 </div>
                 <div className="stat-label">Materias</div>
-                <div className="stat-number">0</div>
+                <div className="stat-number">{materias.length}</div>
               </div>
             </div>
 
             {/* Semestres */}
             <div className="col-md-4">
-              <div className="stat-card">
+              <div 
+                className="stat-card"
+                style={{ cursor: 'pointer' }}
+                onClick={() => onNavigate('semestres')}
+              >
                 <div className="d-flex align-items-start justify-content-between mb-3">
                   <div className="stat-icon">
                     <i className="bi bi-calendar"></i>
                   </div>
                 </div>
                 <div className="stat-label">Semestres</div>
-                <div className="stat-number">0</div>
+                <div className="stat-number">{semestres.length}</div>
               </div>
             </div>
           </div>
@@ -136,20 +196,33 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
               <div className="stat-card">
                 <h6 className="text-white fw-bold mb-4">Distribución por Carrera</h6>
                 <div className="bar-chart">
-                  <div style={{ height: '0%' }} className="bar"></div>
-                  <div style={{ height: '0%' }} className="bar"></div>
-                  <div style={{ height: '0%' }} className="bar"></div>
-                  <div style={{ height: '0%' }} className="bar"></div>
-                  <div style={{ height: '0%' }} className="bar"></div>
-                  <div style={{ height: '0%' }} className="bar"></div>
+                  {distributionCounts.map((count, idx) => {
+                    const heightPercent = (count / maxAlumnos) * 100;
+                    return (
+                      <div 
+                        key={idx} 
+                        className="bar position-relative" 
+                        style={{ height: `${heightPercent}%` }}
+                        title={`${count} alumnos`}
+                      >
+                        {count > 0 && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '-20px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            color: '#94a3b8',
+                            fontSize: '0.75rem'
+                          }}>
+                            {count}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="d-flex justify-content-between mt-3" style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                  <span>Sistemas</span>
-                  <span>Arquitectura</span>
-                  <span>Civil</span>
-                  <span>Mecatrónica</span>
-                  <span>Administración</span>
-                  <span>Gestión</span>
+                  {carreras.map(c => <span key={c}>{c}</span>)}
                 </div>
               </div>
             </div>
@@ -202,12 +275,14 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
     }
 
     if (activeItem === 'alumnos') {
-      const filteredAlumnos = alumnosData.filter(alumno => {
+      const filteredAlumnos = alumnos.filter(alumno => {
         if (!searchQuery.trim()) return true
         const query = searchQuery.toLowerCase()
         return (
-          alumno.nombre.toLowerCase().includes(query) ||
-          alumno.codigo.toLowerCase().includes(query)
+          (alumno.nombre || '').toLowerCase().includes(query) ||
+          (alumno.apellido_paterno || '').toLowerCase().includes(query) ||
+          (alumno.apellido_materno || '').toLowerCase().includes(query) ||
+          (alumno.matricula || '').toLowerCase().includes(query)
         )
       }).filter(alumno => {
         if (!selectedCarrera) return true
@@ -253,11 +328,86 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
         setFormData(prev => ({ ...prev, [name]: value }))
       }
 
-      const handleSubmit = (e) => {
+      const validateAlumnoForm = () => {
+        const errors = {}
+        const nameRegex = /^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)(\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?$/
+        const lastNameRegex = /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/
+        const matriculaRegex = /^[0-9]{8}$/
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+        if (!formData.nombre || !nameRegex.test(formData.nombre.trim())) {
+          errors.nombre = 'Debe contener 1 o 2 nombres, cada uno iniciando en mayúscula y el resto en minúscula. Sin números ni caracteres especiales.'
+        }
+        if (!formData.apellido_paterno || !lastNameRegex.test(formData.apellido_paterno.trim())) {
+          errors.apellido_paterno = 'Debe iniciar con mayúscula seguida de minúsculas. Sin números, espacios ni caracteres especiales.'
+        }
+        if (formData.apellido_materno && !lastNameRegex.test(formData.apellido_materno.trim())) {
+          errors.apellido_materno = 'Debe iniciar con mayúscula seguida de minúsculas. Sin números, espacios ni caracteres especiales.'
+        }
+        if (!formData.matricula || !matriculaRegex.test(formData.matricula.trim())) {
+          errors.matricula = 'La matrícula debe ser de exactamente 8 números.'
+        }
+        if (!formData.correo || !emailRegex.test(formData.correo.trim())) {
+          errors.correo = 'Debe ingresar un correo electrónico válido.'
+        }
+        
+        return errors
+      }
+
+      const handleSubmit = async (e) => {
         e.preventDefault()
-        alert('Alumno guardado: ' + JSON.stringify(formData, null, 2))
-        setShowModal(false)
-        setFormData({ numeroControl: '', nombre: '', apellido: '', telefono: '', email: '', carrera: '', imagenURL: '' })
+        const errors = validateAlumnoForm()
+        if (Object.keys(errors).length > 0) {
+          setFormErrors(errors)
+          return
+        }
+        setFormErrors({})
+
+        try {
+          const dataToSend = {
+            ...formData,
+            semestre: parseInt(formData.semestre) || 1
+          };
+          if (alumnoEditando) {
+            await actualizarAlumno(alumnoEditando.id_alumno, dataToSend);
+            alert('Alumno actualizado correctamente');
+          } else {
+            await crearAlumno(dataToSend);
+            alert('Alumno creado correctamente');
+          }
+          setShowModal(false);
+          setFormData({ nombre: '', apellido_paterno: '', apellido_materno: '', matricula: '', carrera: '', semestre: '', correo: '' });
+          setAlumnoEditando(null);
+          fetchAlumnos();
+        } catch {
+          alert('Ocurrió un error al guardar');
+        }
+      }
+
+      const handleEdit = (alumno) => {
+        setAlumnoEditando(alumno);
+        setFormData({
+          nombre: alumno.nombre || '',
+          apellido_paterno: alumno.apellido_paterno || '',
+          apellido_materno: alumno.apellido_materno || '',
+          matricula: alumno.matricula || '',
+          carrera: alumno.carrera || '',
+          semestre: alumno.semestre || '',
+          correo: alumno.correo || ''
+        });
+        setShowModal(true);
+      }
+
+      const handleDelete = async (id) => {
+        if (window.confirm('¿Estás seguro de eliminar este alumno?')) {
+          try {
+            await eliminarAlumno(id);
+            alert('Alumno eliminado correctamente');
+            fetchAlumnos();
+          } catch {
+            alert('Error al eliminar alumno');
+          }
+        }
       }
 
       const getAvatarColorByCarrera = (carrera) => {
@@ -331,44 +481,35 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
             </span>
           </div>
 
-          <div className="row g-4">
-            {filteredAlumnos.map((alumno, idx) => {
+          <div className="materia-list-compact">
+            {filteredAlumnos.map((alumno) => {
               const initials = getInitials(alumno.nombre)
               const avatarClass = getAvatarColorByCarrera(alumno.carrera)
               return (
-                <div key={alumno.id} className="col-md-6 col-lg-4">
-                  <div className="alumno-card">
-                    <div className="alumno-card-header">
-                      <div className={`avatar-circle ${avatarClass}`}>
-                        {initials}
-                      </div>
-                      <div className="alumno-card-info">
-                        <p className="alumno-card-name">{alumno.nombre}</p>
-                        <div className="alumno-card-carrera">
-                          {alumno.carrera}
-                        </div>
-                      </div>
+                <div key={alumno.id_alumno || alumno.id} className="materia-row-compact">
+                  <div className="materia-col-codigo" style={{ width: '120px' }}>
+                    <span className="badge-codigo">{alumno.matricula || 'N/A'}</span>
+                  </div>
+                  <div className="materia-col-info" style={{ flex: '2' }}>
+                    <div className="materia-nombre-compact">{alumno.nombre} {alumno.apellido_paterno} {alumno.apellido_materno}</div>
+                    <div className="materia-carrera-compact">{alumno.carrera || 'Sin carrera'}</div>
+                  </div>
+                  <div className="materia-col-profesor" style={{ flex: '2' }}>
+                    <div className={`avatar-circle avatar-xs ${avatarClass}`}>
+                      {initials}
                     </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.5rem 0' }}>
-                        <i className="bi bi-hash me-2"></i>
-                        {alumno.codigo}
-                      </p>
-                      <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.5rem 0' }}>
-                        <i className="bi bi-telephone me-2"></i>
-                        {alumno.telefono}
-                      </p>
-                    </div>
-
-                    <div className="alumno-card-actions">
-                      <button className="btn-editar">
-                        <i className="bi bi-pencil me-1"></i> Editar
-                      </button>
-                      <button className="btn-eliminar">
-                        <i className="bi bi-trash me-1"></i> Eliminar
-                      </button>
-                    </div>
+                    <span className="profesor-nombre-compact">{alumno.correo || 'Sin correo'}</span>
+                  </div>
+                  <div className="materia-col-creditos" style={{ width: '100px' }}>
+                    Sem. {alumno.semestre || 1}
+                  </div>
+                  <div className="d-flex gap-2 ms-auto align-items-center">
+                    <button className="btn btn-sm btn-outline-info" style={{ border: 'none' }} onClick={() => handleEdit(alumno)}>
+                      <i className="bi bi-pencil"></i>
+                    </button>
+                    <button className="btn btn-sm btn-outline-danger" style={{ border: 'none' }} onClick={() => handleDelete(alumno.id_alumno || alumno.id)}>
+                      <i className="bi bi-trash"></i>
+                    </button>
                   </div>
                 </div>
               )
@@ -390,17 +531,22 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
                   <div className="modal-header" style={{ borderBottom: '1px solid #1f2937', padding: '1.5rem' }}>
                     <div>
                       <h5 className="modal-title" style={{ color: '#22d3ee', fontWeight: '600', fontSize: '1.25rem' }}>
-                        <i className="bi bi-person-plus me-2"></i> Nuevo Alumno
+                        <i className="bi bi-person-plus me-2"></i> {alumnoEditando ? 'Editar Alumno' : 'Nuevo Alumno'}
                       </h5>
                       <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '0' }}>
-                        Registrar un nuevo estudiante en el sistema
+                        {alumnoEditando ? 'Modificar datos del estudiante' : 'Registrar un nuevo estudiante en el sistema'}
                       </p>
                     </div>
                     <button
                       type="button"
                       className="btn-close btn-close-white"
                       style={{ filter: 'brightness(0) saturate(100%) invert(71%) sepia(96%) saturate(1745%) hue-rotate(156deg) brightness(95%) contrast(101%)' }}
-                      onClick={() => setShowModal(false)}
+                      onClick={() => {
+                        setShowModal(false);
+                        setAlumnoEditando(null);
+                        setFormData({ nombre: '', apellido_paterno: '', apellido_materno: '', matricula: '', carrera: '', semestre: '', correo: '' });
+                        setFormErrors({});
+                      }}
                     ></button>
                   </div>
                   <form onSubmit={handleSubmit}>
@@ -419,55 +565,55 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
                             onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                             onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                           />
+                          {formErrors.nombre && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.nombre}</div>}
                         </div>
                         <div className="col-md-6">
-                          <label style={labelStyle}>Apellido *</label>
+                          <label style={labelStyle}>Apellido Paterno *</label>
                           <input
                             type="text"
                             className="form-control"
-                            name="apellido"
-                            value={formData.apellido}
+                            name="apellido_paterno"
+                            value={formData.apellido_paterno}
                             onChange={handleInputChange}
                             required
                             style={inputStyle}
                             onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                             onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                           />
+                          {formErrors.apellido_paterno && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.apellido_paterno}</div>}
                         </div>
                       </div>
 
                       <div className="row g-3 mb-3">
                         <div className="col-md-6">
-                          <label style={labelStyle}>Número de Control</label>
+                          <label style={labelStyle}>Apellido Materno</label>
                           <input
                             type="text"
                             className="form-control"
-                            name="numeroControl"
-                            value={formData.numeroControl}
+                            name="apellido_materno"
+                            value={formData.apellido_materno}
                             onChange={handleInputChange}
-                            pattern=".{8,10}"
-                            title="El número de control debe tener entre 8 y 10 caracteres"
-                            maxLength="10"
                             style={inputStyle}
                             onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                             onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                           />
+                          {formErrors.apellido_materno && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.apellido_materno}</div>}
                         </div>
                         <div className="col-md-6">
-                          <label style={labelStyle}>Teléfono</label>
+                          <label style={labelStyle}>Matrícula *</label>
                           <input
                             type="text"
                             className="form-control"
-                            name="telefono"
-                            value={formData.telefono}
+                            name="matricula"
+                            value={formData.matricula}
                             onChange={handleInputChange}
-                            pattern="\d{10}"
-                            title="El teléfono debe tener exactamente 10 dígitos numéricos"
-                            maxLength="10"
+                            required
+                            maxLength="8"
                             style={inputStyle}
                             onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                             onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                           />
+                          {formErrors.matricula && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.matricula}</div>}
                         </div>
                       </div>
 
@@ -477,14 +623,15 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
                           <input
                             type="email"
                             className="form-control"
-                            name="email"
-                            value={formData.email}
+                            name="correo"
+                            value={formData.correo}
                             onChange={handleInputChange}
                             required
                             style={inputStyle}
                             onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                             onBlur={(e) => Object.assign(e.target.style, inputStyle)}
                           />
+                          {formErrors.correo && <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.25rem' }}>{formErrors.correo}</div>}
                         </div>
                         <div className="col-md-6">
                           <label style={labelStyle}>Carrera *</label>
@@ -513,14 +660,17 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
                       </div>
 
                       <div className="mb-3">
-                        <label style={labelStyle}>URL de Imagen <span style={{ color: '#64748b', fontWeight: '400' }}>(opcional)</span></label>
+                        <label style={labelStyle}>Semestre *</label>
                         <input
-                          type="text"
+                          type="number"
                           className="form-control"
-                          name="imagenURL"
-                          value={formData.imagenURL}
+                          name="semestre"
+                          value={formData.semestre}
                           onChange={handleInputChange}
-                          placeholder="https://ejemplo.com/foto.jpg"
+                          required
+                          min="1"
+                          max="12"
+                          placeholder="Ej: 5"
                           style={inputStyle}
                           onFocus={(e) => Object.assign(e.target.style, inputFocusStyle)}
                           onBlur={(e) => Object.assign(e.target.style, inputStyle)}
@@ -539,7 +689,11 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
                           padding: '0.75rem 1.5rem',
                           fontWeight: '500'
                         }}
-                        onClick={() => setShowModal(false)}
+                        onClick={() => {
+                          setShowModal(false);
+                          setAlumnoEditando(null);
+                          setFormData({ nombre: '', apellido_paterno: '', apellido_materno: '', matricula: '', carrera: '', semestre: '', correo: '' });
+                        }}
                       >
                         Cancelar
                       </button>
@@ -568,13 +722,13 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
     }
 
     if (activeItem === 'materias') {
-      const filteredMaterias = materiasData.filter(materia => {
+      const filteredMaterias = materias.filter(materia => {
         if (!searchQuery.trim()) return true
         const query = searchQuery.toLowerCase()
         return (
-          materia.nombre.toLowerCase().includes(query) ||
-          materia.codigo.toLowerCase().includes(query) ||
-          materia.profesor.toLowerCase().includes(query)
+          (materia.nombre || '').toLowerCase().includes(query) ||
+          (materia.codigo || '').toLowerCase().includes(query) ||
+          (materia.profesor || '').toLowerCase().includes(query)
         )
       }).filter(materia => {
         if (!selectedCarrera) return true
@@ -590,17 +744,58 @@ export default function MenuOpciones({ activeItem = 'semestres', onNavigate }) {
         'Gestión Empresarial'
       ]
 
-const handleInputChangeMateria = (e) => {
-    const { name, value } = e.target
-    setFormDataMateria(prev => ({ ...prev, [name]: value }))
-  }
+      const handleInputChangeMateria = (e) => {
+        const { name, value } = e.target
+        setFormDataMateria(prev => ({ ...prev, [name]: value }))
+      }
 
-  const handleSubmitMateria = (e) => {
-    e.preventDefault()
-    alert('Materia guardada: ' + JSON.stringify(formDataMateria, null, 2))
-    setShowModal(false)
-    setFormDataMateria({ nombre: '', creditos: '', semestre: '' })
-  }
+      const handleSubmitMateria = async (e) => {
+        e.preventDefault()
+        try {
+          const dataToSend = {
+            ...formDataMateria,
+            creditos: parseInt(formDataMateria.creditos) || 0,
+            semestre: parseInt(formDataMateria.semestre) || 1
+          };
+          
+          if (materiaEditando) {
+            const idMateria = materiaEditando.id || materiaEditando.id_materia;
+            await actualizarMateria(idMateria, dataToSend);
+            alert('Materia actualizada correctamente');
+          } else {
+            await crearMateria(dataToSend);
+            alert('Materia creada correctamente');
+          }
+          setShowModal(false);
+          setFormDataMateria({ nombre: '', creditos: '', semestre: '' });
+          setMateriaEditando(null);
+          fetchMaterias();
+        } catch {
+          alert('Ocurrió un error al guardar la materia');
+        }
+      }
+
+      const handleEditMateria = (materia) => {
+        setMateriaEditando(materia);
+        setFormDataMateria({
+          nombre: materia.nombre || '',
+          creditos: materia.creditos || '',
+          semestre: materia.semestre || ''
+        });
+        setShowModal(true);
+      }
+
+      const handleDeleteMateria = async (id) => {
+        if (window.confirm('¿Estás seguro de eliminar esta materia?')) {
+          try {
+            await eliminarMateria(id);
+            alert('Materia eliminada correctamente');
+            fetchMaterias();
+          } catch {
+            alert('Error al eliminar materia');
+          }
+        }
+      }
 
       return (
         <div className="px-5 pb-5 pt-4 flex-grow-1">
@@ -686,7 +881,15 @@ const handleInputChangeMateria = (e) => {
                       {materia.creditos} créditos
                     </div>
                     <div className="materia-col-horario">
-                      {materia.horario}
+                      {materia.horario || `Semestre ${materia.semestre}`}
+                    </div>
+                    <div className="d-flex gap-2 ms-3 align-items-center">
+                      <button className="btn btn-sm btn-outline-info" style={{ border: 'none' }} onClick={() => handleEditMateria(materia)}>
+                        <i className="bi bi-pencil"></i>
+                      </button>
+                      <button className="btn btn-sm btn-outline-danger" style={{ border: 'none' }} onClick={() => handleDeleteMateria(materia.id || materia.id_materia)}>
+                        <i className="bi bi-trash"></i>
+                      </button>
                     </div>
                   </div>
                 )
@@ -714,17 +917,21 @@ const handleInputChangeMateria = (e) => {
                   <div className="modal-header" style={{ borderBottom: '1px solid #1f2937', padding: '1.5rem' }}>
                     <div>
                       <h5 className="modal-title" style={{ color: '#22d3ee', fontWeight: '600', fontSize: '1.25rem' }}>
-                        <i className="bi bi-book me-2"></i> Nueva Materia
+                        <i className="bi bi-book me-2"></i> {materiaEditando ? 'Editar Materia' : 'Nueva Materia'}
                       </h5>
                       <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '0' }}>
-                        Registrar una nueva materia en el sistema
+                        {materiaEditando ? 'Actualiza los datos de la materia' : 'Registrar una nueva materia en el sistema'}
                       </p>
                     </div>
                     <button
                       type="button"
                       className="btn-close btn-close-white"
                       style={{ filter: 'brightness(0) saturate(100%) invert(71%) sepia(96%) saturate(1745%) hue-rotate(156deg) brightness(95%) contrast(101%)' }}
-                      onClick={() => setShowModal(false)}
+                      onClick={() => {
+                        setShowModal(false);
+                        setMateriaEditando(null);
+                        setFormDataMateria({ nombre: '', creditos: '', semestre: '' });
+                      }}
                     ></button>
                   </div>
                   <form onSubmit={handleSubmitMateria}>
@@ -865,9 +1072,19 @@ const handleInputChangeMateria = (e) => {
     return null
   }
 
+  const dynamicNavigationItems = {
+    ...navigationItems,
+    gestion: navigationItems.gestion.map(item => {
+      if (item.id === 'alumnos') return { ...item, count: alumnos.length }
+      if (item.id === 'materias') return { ...item, count: materias.length }
+      if (item.id === 'semestres') return { ...item, count: semestres.length }
+      return item
+    })
+  }
+
   return (
     <div className="d-flex" style={{ height: '100vh', background: '#0b111a' }}>
-      <Sidebar navigationItems={navigationItems} activeItem={activeItem} onNavigate={handleNavigate} currentUser={currentUserState} />
+      <Sidebar navigationItems={dynamicNavigationItems} activeItem={activeItem} onNavigate={handleNavigate} currentUser={currentUserState} />
 
       <main className="flex-grow-1 d-flex flex-column" style={{ overflowY: 'auto', background: '#0b111a' }}>
 
@@ -896,9 +1113,28 @@ const handleInputChangeMateria = (e) => {
               </button>
             </div>
 
-            <div className="row g-4">
-              {semestresData.map((semestre) => (
-                <SemestreCard key={semestre.id} semestre={semestre} />
+            <div className="materia-list-compact">
+              {semestres.map((semestre) => (
+                <SemestreCard 
+                  key={semestre.id || semestre.id_semestre} 
+                  semestre={semestre}
+                  onEdit={() => {
+                    setSemestreEditando(semestre);
+                    setFormDataSemestre({ nombre: semestre.nombre, estado: semestre.estado });
+                    setShowModalSemestre(true);
+                  }}
+                  onDelete={async () => {
+                    if (window.confirm('¿Estás seguro de eliminar este semestre?')) {
+                      try {
+                        await eliminarSemestre(semestre.id || semestre.id_semestre);
+                        alert('Semestre eliminado correctamente');
+                        fetchSemestres();
+                      } catch {
+                        alert('Error al eliminar semestre');
+                      }
+                    }
+                  }}
+                />
               ))}
             </div>
 
@@ -924,17 +1160,21 @@ const handleInputChangeMateria = (e) => {
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
                         <h5 className="modal-semestre-title">
-                          <i className="bi bi-calendar-plus me-2"></i> Nuevo Semestre
+                          <i className="bi bi-calendar-plus me-2"></i> {semestreEditando ? 'Editar Semestre' : 'Nuevo Semestre'}
                         </h5>
                         <p className="modal-semestre-description">
-                          Registra un nuevo período académico al sistema
+                          {semestreEditando ? 'Actualiza los datos del período académico' : 'Registra un nuevo período académico al sistema'}
                         </p>
                       </div>
                       <button
                         type="button"
                         className="btn-close btn-close-white"
                         style={{ filter: 'brightness(0) saturate(100%) invert(71%) sepia(96%) saturate(1745%) hue-rotate(156deg) brightness(95%) contrast(101%)' }}
-                        onClick={() => setShowModalSemestre(false)}
+                        onClick={() => {
+                          setShowModalSemestre(false);
+                          setSemestreEditando(null);
+                          setFormDataSemestre({ nombre: '', estado: 'Activo' });
+                        }}
                       ></button>
                     </div>
                   </div>
@@ -962,10 +1202,22 @@ const handleInputChangeMateria = (e) => {
                     <button
                       type="button"
                       className="btn-guardar-semestre"
-                      onClick={() => {
-                        console.log('Semestre guardado')
-                        setShowModalSemestre(false)
-                        setFormDataSemestre({ nombre: '', fechaInicio: '', fechaFin: '' })
+                      onClick={async () => {
+                        try {
+                          if (semestreEditando) {
+                            await actualizarSemestre(semestreEditando.id || semestreEditando.id_semestre, formDataSemestre);
+                            alert('Semestre actualizado correctamente');
+                          } else {
+                            await crearSemestre(formDataSemestre);
+                            alert('Semestre guardado correctamente');
+                          }
+                          setShowModalSemestre(false);
+                          setFormDataSemestre({ nombre: '', estado: 'Activo' });
+                          setSemestreEditando(null);
+                          fetchSemestres();
+                        } catch {
+                          alert('Ocurrió un error al guardar el semestre');
+                        }
                       }}
                     >
                       <i className="bi bi-check-lg me-2"></i> Guardar
