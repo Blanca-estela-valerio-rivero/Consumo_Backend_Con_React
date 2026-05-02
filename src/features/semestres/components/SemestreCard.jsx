@@ -1,4 +1,3 @@
-import React from 'react'
 
 export default function SemestreCard({ semestre, onEdit, onDelete }) {
   const isActivo = semestre.estado === 'Activo';
