@@ -30,12 +30,14 @@ public class AlumnoService {
         return alumnoRepository.findById(id)
                 .map(alumno -> {
                     alumno.setNombre(alumnoActualizado.getNombre());
-                    alumno.setApellido_paterno(alumnoActualizado.getApellido_paterno());
-                    alumno.setApellido_materno(alumnoActualizado.getApellido_materno());
+                    alumno.setApellidoPaterno(alumnoActualizado.getApellidoPaterno());
+                    alumno.setApellidoMaterno(alumnoActualizado.getApellidoMaterno());
                     alumno.setMatricula(alumnoActualizado.getMatricula());
+                    alumno.setTelefono(alumnoActualizado.getTelefono());
+                    alumno.setCorreo(alumnoActualizado.getCorreo());
                     alumno.setCarrera(alumnoActualizado.getCarrera());
                     alumno.setSemestre(alumnoActualizado.getSemestre());
-                    alumno.setCorreo(alumnoActualizado.getCorreo());
+                    alumno.setImagenURL(alumnoActualizado.getImagenURL());
                     return alumnoRepository.save(alumno);
                 }).orElseThrow(() -> new RuntimeException("Alumno no encontrado con id " + id));
     }

@@ -12,7 +12,7 @@ import com.sistema.academico.service.SemestreService;
 
 @RestController
 @RequestMapping("/semestres")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class SemestreController {
 
     @Autowired

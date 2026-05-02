@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
 
 @Entity
 @Table(name = "alumnos")
@@ -12,27 +13,36 @@ public class Alumno {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_alumno")
     private Long id_alumno;
 
+    @Column(name = "nombre")
     private String nombre;
-    private String apellido_paterno;
-    private String apellido_materno;
+    
+    @Column(name = "apellido_paterno")
+    private String apellidoPaterno;
+    
+    @Column(name = "apellido_materno")
+    private String apellidoMaterno;
+    
+    @Column(name = "matricula")
     private String matricula;
-    private String carrera;
-    private Integer semestre;
+    
+    @Column(name = "telefono")
+    private String telefono;
+    
+    @Column(name = "correo")
     private String correo;
+    
+    @Column(name = "carrera")
+    private String carrera;
+    
+    @Column(name = "semestre")
+    private Integer semestre;
+    
+    private String imagenURL;
 
     public Alumno() {
-    }
-
-    public Alumno(String nombre, String apellido_paterno, String apellido_materno, String matricula, String carrera, Integer semestre, String correo) {
-        this.nombre = nombre;
-        this.apellido_paterno = apellido_paterno;
-        this.apellido_materno = apellido_materno;
-        this.matricula = matricula;
-        this.carrera = carrera;
-        this.semestre = semestre;
-        this.correo = correo;
     }
 
     public Long getId_alumno() {
@@ -51,20 +61,20 @@ public class Alumno {
         this.nombre = nombre;
     }
 
-    public String getApellido_paterno() {
-        return apellido_paterno;
+    public String getApellidoPaterno() {
+        return apellidoPaterno;
     }
 
-    public void setApellido_paterno(String apellido_paterno) {
-        this.apellido_paterno = apellido_paterno;
+    public void setApellidoPaterno(String apellidoPaterno) {
+        this.apellidoPaterno = apellidoPaterno;
     }
 
-    public String getApellido_materno() {
-        return apellido_materno;
+    public String getApellidoMaterno() {
+        return apellidoMaterno;
     }
 
-    public void setApellido_materno(String apellido_materno) {
-        this.apellido_materno = apellido_materno;
+    public void setApellidoMaterno(String apellidoMaterno) {
+        this.apellidoMaterno = apellidoMaterno;
     }
 
     public String getMatricula() {
@@ -73,6 +83,22 @@ public class Alumno {
 
     public void setMatricula(String matricula) {
         this.matricula = matricula;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public String getCarrera() {
@@ -91,11 +117,11 @@ public class Alumno {
         this.semestre = semestre;
     }
 
-    public String getCorreo() {
-        return correo;
+    public String getImagenURL() {
+        return imagenURL;
     }
 
-    public void setCorreo(String correo) {
-        this.correo = correo;
+    public void setImagenURL(String imagenURL) {
+        this.imagenURL = imagenURL;
     }
 }

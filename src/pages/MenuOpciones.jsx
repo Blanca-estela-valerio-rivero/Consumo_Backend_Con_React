@@ -60,11 +60,13 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
   const [alumnoEditando, setAlumnoEditando] = useState(null);
   const [formData, setFormData] = useState({
     nombre: "",
-    apellido: "",
-    numeroControl: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
+    matricula: "",
     telefono: "",
-    email: "",
+    correo: "",
     carrera: "",
+    semestre: "",
     imagenURL: "",
   });
   const [formErrors, setFormErrors] = useState({});
@@ -222,7 +224,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
           {/* Gráficas de CSS Puro */}
           <div className="row g-4 mt-4">
             {/* Distribución por Carrera */}
-            <div className="col-lg-6">
+            <div className="col-lg-7">
               <div className="stat-card">
                 <h6 className="text-white fw-bold mb-4">
                   Distribución por Carrera
@@ -257,24 +259,42 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                 </div>
                 <div
                   className="d-flex justify-content-between mt-3"
-                  style={{ fontSize: "0.8rem", color: "#94a3b8" }}
+                  style={{ fontSize: "0.75rem", color: "#94a3b8", textAlign: "center" }}
                 >
-                  {carreras.map((c) => (
-                    <span key={c}>{c}</span>
-                  ))}
+                  {carreras.map((c) => {
+                    let shortName = c.replace(/Ingeniería En |Ingeniería |Licenciatura En |Licenciatura /g, '');
+                    if (shortName === 'Administración') shortName = 'Adminis- tración';
+                    return (
+                      <span 
+                        key={c} 
+                        style={{ 
+                          width: `${100 / carreras.length}%`, 
+                          padding: '0 4px', 
+                          wordBreak: 'normal',
+                          lineHeight: '1.2'
+                        }}
+                        title={c}
+                      >
+                        {shortName}
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             {/* Aprobados vs Reprobados */}
-            <div className="col-lg-6">
+            <div className="col-lg-5">
               <div className="stat-card">
                 <h6 className="text-white fw-bold mb-4">Desempeño Académico</h6>
                 <div className="d-flex align-items-center justify-content-between">
                   <div style={{ flex: 1, textAlign: "center" }}>
-                    <div className="donut-chart">
+                    <div 
+                      className="donut-chart"
+                      style={{ background: 'conic-gradient(#10b981 0deg 316.8deg, #ef4444 316.8deg 360deg)' }}
+                    >
                       <div className="donut-inner">
-                        <div className="donut-percentage">0%</div>
+                        <div className="donut-percentage">88%</div>
                         <div className="donut-label">Aprobados</div>
                       </div>
                     </div>
@@ -291,7 +311,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           }}
                         ></div>
                         <span style={{ color: "#94a3b8", fontSize: "0.9rem" }}>
-                          Aprobados: 0
+                          Aprobados: 320
                         </span>
                       </div>
                       <div className="d-flex align-items-center gap-2">
@@ -304,7 +324,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           }}
                         ></div>
                         <span style={{ color: "#94a3b8", fontSize: "0.9rem" }}>
-                          Reprobados: 0
+                          Reprobados: 45
                         </span>
                       </div>
                     </div>
@@ -324,8 +344,8 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
           const query = searchQuery.toLowerCase();
           return (
             (alumno.nombre || "").toLowerCase().includes(query) ||
-            (alumno.apellido || "").toLowerCase().includes(query) ||
-            (alumno.numeroControl || "").toLowerCase().includes(query)
+            (alumno.apellidoPaterno || "").toLowerCase().includes(query) ||
+            (alumno.matricula || "").toLowerCase().includes(query)
           );
         })
         .filter((alumno) => {
@@ -380,27 +400,30 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
           /^([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)(\s[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)?$/;
         const phoneRegex = /^[0-9]{10}$/;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const controlRegex = /^[0-9]{8,12}$/;
+        const matriculaRegex = /^[0-9]{8}$/;
 
         if (!formData.nombre || !nameRegex.test(formData.nombre.trim())) {
           errors.nombre =
             "Debe contener 1 o 2 nombres, cada uno iniciando en mayúscula y el resto en minúscula.";
         }
-        if (!formData.apellido || formData.apellido.trim().length < 3) {
-          errors.apellido = "Los apellidos son obligatorios.";
+        if (!formData.apellidoPaterno || formData.apellidoPaterno.trim().length < 3) {
+          errors.apellidoPaterno = "El apellido paterno es obligatorio.";
+        }
+        if (!formData.apellidoMaterno || formData.apellidoMaterno.trim().length < 3) {
+          errors.apellidoMaterno = "El apellido materno es obligatorio.";
         }
         if (
-          !formData.numeroControl ||
-          !controlRegex.test(formData.numeroControl.trim())
+          !formData.matricula ||
+          !matriculaRegex.test(formData.matricula.trim())
         ) {
-          errors.numeroControl =
-            "El número de control debe contener solo dígitos (8-12 caracteres).";
+          errors.matricula =
+            "El número de control debe contener exactamente 8 dígitos.";
         }
         if (formData.telefono && !phoneRegex.test(formData.telefono.trim())) {
           errors.telefono = "El teléfono debe contener exactamente 10 dígitos.";
         }
-        if (!formData.email || !emailRegex.test(formData.email.trim())) {
-          errors.email = "Debe ingresar un correo electrónico válido.";
+        if (!formData.correo || !emailRegex.test(formData.correo.trim())) {
+          errors.correo = "Debe ingresar un correo electrónico válido.";
         }
 
         return errors;
@@ -409,37 +432,39 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
       const handleSubmit = async (e) => {
         e.preventDefault();
         const errors = validateAlumnoForm();
+
         if (Object.keys(errors).length > 0) {
           setFormErrors(errors);
-          return;
+          return; // Si hay errores, no continúa
         }
-        setFormErrors({});
 
+        setFormErrors({});
         try {
-          const dataToSend = {
-            ...formData,
-          };
+          const dataToSend = { ...formData };
+
           if (alumnoEditando) {
-            await actualizarAlumno(alumnoEditando.id_alumno, dataToSend);
+            // USAR EL ID DISPONIBLE (id_alumno o id)
+            const id = alumnoEditando.id_alumno || alumnoEditando.id;
+            if (!id) throw new Error("No se encontró el ID del alumno");
+
+            await actualizarAlumno(id, dataToSend);
             alert("Alumno actualizado correctamente");
           } else {
             await crearAlumno(dataToSend);
             alert("Alumno creado correctamente");
           }
+
+          // Resetear todo
           setShowModal(false);
-          setFormData({
-            nombre: "",
-            apellido: "",
-            numeroControl: "",
-            telefono: "",
-            email: "",
-            carrera: "",
-            imagenURL: "",
-          });
           setAlumnoEditando(null);
+          setFormData({
+            nombre: "", apellidoPaterno: "", apellidoMaterno: "",
+            matricula: "", telefono: "", correo: "", carrera: "", semestre: "", imagenURL: "",
+          });
           fetchAlumnos();
-        } catch {
-          alert("Ocurrió un error al guardar");
+        } catch (error) {
+          console.error("Error al guardar:", error);
+          alert("Ocurrió un error al guardar. Revisa la consola.");
         }
       };
 
@@ -447,11 +472,13 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
         setAlumnoEditando(alumno);
         setFormData({
           nombre: alumno.nombre || "",
-          apellido: alumno.apellido || "",
-          numeroControl: alumno.numeroControl || "",
+          apellidoPaterno: alumno.apellidoPaterno || "",
+          apellidoMaterno: alumno.apellidoMaterno || "",
+          matricula: alumno.matricula || "",
           telefono: alumno.telefono || "",
-          email: alumno.email || "",
+          correo: alumno.correo || "",
           carrera: alumno.carrera || "",
+          semestre: alumno.semestre || "",
           imagenURL: alumno.imagenURL || "",
         });
         setShowModal(true);
@@ -574,12 +601,12 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                     style={{ width: "120px" }}
                   >
                     <span className="badge-codigo">
-                      {alumno.numeroControl || "N/A"}
+                      {alumno.matricula || "N/A"}
                     </span>
                   </div>
                   <div className="materia-col-info" style={{ flex: "2" }}>
                     <div className="materia-nombre-compact">
-                      {alumno.nombre} {alumno.apellido}
+                      {alumno.nombre} {alumno.apellidoPaterno}
                     </div>
                     <div className="materia-carrera-compact">
                       {alumno.carrera || "Sin carrera"}
@@ -601,7 +628,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                       </div>
                     )}
                     <span className="profesor-nombre-compact">
-                      {alumno.email || "Sin email"}
+                      {alumno.correo || "Sin email"}
                     </span>
                   </div>
                   <div
@@ -692,11 +719,13 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                         setAlumnoEditando(null);
                         setFormData({
                           nombre: "",
-                          apellido: "",
-                          numeroControl: "",
+                          apellidoPaterno: "",
+                          apellidoMaterno: "",
+                          matricula: "",
                           telefono: "",
-                          email: "",
+                          correo: "",
                           carrera: "",
+                          semestre: "",
                           imagenURL: "",
                         });
                         setFormErrors({});
@@ -736,12 +765,12 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           )}
                         </div>
                         <div className="col-md-6">
-                          <label style={labelStyle}>Apellidos *</label>
+                          <label style={labelStyle}>Apellido Paterno *</label>
                           <input
                             type="text"
                             className="form-control"
-                            name="apellido"
-                            value={formData.apellido}
+                            name="apellidoPaterno"
+                            value={formData.apellidoPaterno}
                             onChange={handleInputChange}
                             required
                             style={inputStyle}
@@ -752,7 +781,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                               Object.assign(e.target.style, inputStyle)
                             }
                           />
-                          {formErrors.apellido && (
+                          {formErrors.apellidoPaterno && (
                             <div
                               style={{
                                 color: "#ef4444",
@@ -760,7 +789,36 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                                 marginTop: "0.25rem",
                               }}
                             >
-                              {formErrors.apellido}
+                              {formErrors.apellidoPaterno}
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-md-6">
+                          <label style={labelStyle}>Apellido Materno *</label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="apellidoMaterno"
+                            value={formData.apellidoMaterno}
+                            onChange={handleInputChange}
+                            required
+                            style={inputStyle}
+                            onFocus={(e) =>
+                              Object.assign(e.target.style, inputFocusStyle)
+                            }
+                            onBlur={(e) =>
+                              Object.assign(e.target.style, inputStyle)
+                            }
+                          />
+                          {formErrors.apellidoMaterno && (
+                            <div
+                              style={{
+                                color: "#ef4444",
+                                fontSize: "0.75rem",
+                                marginTop: "0.25rem",
+                              }}
+                            >
+                              {formErrors.apellidoMaterno}
                             </div>
                           )}
                         </div>
@@ -772,11 +830,11 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           <input
                             type="text"
                             className="form-control"
-                            name="numeroControl"
-                            value={formData.numeroControl}
+                            name="matricula"
+                            value={formData.matricula}
                             onChange={handleInputChange}
                             required
-                            maxLength="12"
+                            maxLength="8"
                             style={inputStyle}
                             onFocus={(e) =>
                               Object.assign(e.target.style, inputFocusStyle)
@@ -785,7 +843,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                               Object.assign(e.target.style, inputStyle)
                             }
                           />
-                          {formErrors.numeroControl && (
+                          {formErrors.matricula && (
                             <div
                               style={{
                                 color: "#ef4444",
@@ -793,7 +851,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                                 marginTop: "0.25rem",
                               }}
                             >
-                              {formErrors.numeroControl}
+                              {formErrors.matricula}
                             </div>
                           )}
                         </div>
@@ -830,12 +888,12 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
 
                       <div className="row g-3 mb-3">
                         <div className="col-md-6">
-                          <label style={labelStyle}>Email *</label>
+                          <label style={labelStyle}>Correo *</label>
                           <input
                             type="email"
                             className="form-control"
-                            name="email"
-                            value={formData.email}
+                            name="correo"
+                            value={formData.correo}
                             onChange={handleInputChange}
                             required
                             style={inputStyle}
@@ -846,7 +904,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                               Object.assign(e.target.style, inputStyle)
                             }
                           />
-                          {formErrors.email && (
+                          {formErrors.correo && (
                             <div
                               style={{
                                 color: "#ef4444",
@@ -854,7 +912,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                                 marginTop: "0.25rem",
                               }}
                             >
-                              {formErrors.email}
+                              {formErrors.correo}
                             </div>
                           )}
                         </div>
@@ -944,11 +1002,13 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           setAlumnoEditando(null);
                           setFormData({
                             nombre: "",
-                            apellido: "",
-                            numeroControl: "",
+                            apellidoPaterno: "",
+                            apellidoMaterno: "",
+                            matricula: "",
                             telefono: "",
-                            email: "",
+                            correo: "",
                             carrera: "",
+                            semestre: "",
                             imagenURL: "",
                           });
                         }}
@@ -1017,9 +1077,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
           const dataToSend = {
             nombre: formDataMateria.nombre,
             creditos: parseInt(formDataMateria.creditos) || 0,
-            semestre: {
-              id: parseInt(formDataMateria.semestre),
-            },
+            semestre: parseInt(formDataMateria.semestre, 10),
           };
 
           if (materiaEditando) {
@@ -1158,7 +1216,10 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                 const profesorInitials = getInitials(materia.profesor);
                 const avatarClass = getAvatarColor(idx);
                 return (
-                  <div key={materia.id} className="materia-row-compact">
+                  <div
+                    key={materia.id || materia.id_materia}
+                    className="materia-row-compact"
+                  >
                     <div className="materia-col-codigo">
                       <span className="badge-codigo">{materia.codigo}</span>
                     </div>
@@ -1644,7 +1705,7 @@ export default function MenuOpciones({ activeItem = "semestres", onNavigate }) {
                           if (semestreEditando) {
                             await actualizarSemestre(
                               semestreEditando.id ||
-                                semestreEditando.id_semestre,
+                              semestreEditando.id_semestre,
                               formDataSemestre,
                             );
                             alert("Semestre actualizado correctamente");
